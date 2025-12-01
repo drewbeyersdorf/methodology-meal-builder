@@ -1,0 +1,2326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Methodology Meal Builder | Visual Configurator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --cream: #FAF8F5;
+            --warm-white: #FFFDF8;
+            --pure-white: #FFFFFF;
+            --ivory: #F7F5F0;
+            --sand: #E8E4DC;
+            --stone: #9A958C;
+            --charcoal: #2C2C2C;
+            --ink: #1A1A1A;
+            --gold: #B8956E;
+            --gold-light: #D4B896;
+            --sage: #7A8B6F;
+            --sage-light: #A8B89F;
+            --ocean: #4A6670;
+            --coral: #C4856E;
+            --terracotta: #C9A088;
+            --bento-green: #C5C9B8;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-sans: 'Inter', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--cream);
+            color: var(--charcoal);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 360px;
+            height: 100vh;
+        }
+
+        /* Left Sidebar - Menu List */
+        .sidebar {
+            background: var(--warm-white);
+            border-right: 1px solid var(--sand);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--sand);
+            background: var(--pure-white);
+        }
+
+        .logo {
+            font-family: var(--font-serif);
+            font-size: 1.3rem;
+            color: var(--ink);
+            letter-spacing: 0.02em;
+            font-weight: 500;
+        }
+
+        .logo-sub {
+            font-size: 0.65rem;
+            color: var(--stone);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        .upload-zone {
+            margin: 1.25rem;
+            padding: 2rem 1.5rem;
+            border: 2px dashed var(--sand);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--ivory);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--gold);
+            background: var(--pure-white);
+            box-shadow: 0 4px 20px rgba(184, 149, 110, 0.15);
+        }
+
+        .upload-zone.has-file {
+            border-style: solid;
+            border-color: var(--sage);
+            background: rgba(122, 139, 111, 0.08);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .upload-text {
+            font-size: 0.8rem;
+            color: var(--charcoal);
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            font-size: 0.7rem;
+            color: var(--stone);
+            margin-top: 0.5rem;
+        }
+
+        .file-name {
+            font-size: 0.7rem;
+            color: var(--sage);
+            margin-top: 0.75rem;
+            word-break: break-all;
+            font-weight: 500;
+        }
+
+        /* Meal List */
+        .meal-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+        }
+
+        .meal-category {
+            margin-bottom: 1.25rem;
+        }
+
+        .category-header {
+            font-family: var(--font-serif);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--ink);
+            padding: 0.5rem 0.75rem;
+            position: sticky;
+            top: 0;
+            background: var(--warm-white);
+            border-bottom: 1px solid var(--sand);
+        }
+
+        .meal-item {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: var(--pure-white);
+            border: 1px solid var(--sand);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .meal-item:hover {
+            border-color: var(--gold);
+            box-shadow: 0 2px 12px rgba(184, 149, 110, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .meal-item.selected {
+            background: linear-gradient(135deg, rgba(184, 149, 110, 0.1) 0%, rgba(212, 184, 150, 0.1) 100%);
+            border-color: var(--gold);
+            box-shadow: 0 4px 15px rgba(184, 149, 110, 0.2);
+        }
+
+        .meal-code {
+            font-family: var(--font-serif);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .meal-code.vegan {
+            color: var(--sage);
+        }
+
+        .meal-name {
+            font-size: 0.75rem;
+            color: var(--stone);
+            margin-top: 0.35rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Center - Visual Configurator */
+        .configurator {
+            background: var(--ivory);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .config-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--sand);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--pure-white);
+        }
+
+        .config-title {
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        .config-subtitle {
+            font-size: 0.75rem;
+            color: var(--stone);
+            margin-top: 0.25rem;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.65rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: var(--pure-white);
+            border: 1px solid var(--sand);
+            color: var(--charcoal);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-btn.active {
+            background: var(--ink);
+            color: var(--cream);
+            border-color: var(--ink);
+        }
+
+        /* Bento Visual Canvas - Artisanal experimental look */
+        .visual-canvas {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: var(--cream);
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(184, 149, 110, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(122, 139, 111, 0.05) 0%, transparent 50%);
+        }
+
+        .bento-container {
+            position: relative;
+            width: 450px;
+            height: 320px;
+        }
+
+        /* SVG Bento Rendering */
+        .bento-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+        }
+
+        /* Component Layers */
+        .component-layer {
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .component-layer.active {
+            opacity: 1;
+        }
+
+        /* Draggable Components */
+        .draggable-component {
+            cursor: grab;
+            transition: filter 0.2s ease;
+        }
+
+        .draggable-component:hover {
+            filter: brightness(1.1);
+        }
+
+        .draggable-component.dragging {
+            cursor: grabbing;
+            filter: brightness(1.2) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .draggable-component.selected {
+            outline: 2px dashed var(--gold);
+            outline-offset: 3px;
+        }
+
+        /* Resize Handles */
+        .resize-handle {
+            fill: var(--gold);
+            stroke: white;
+            stroke-width: 1;
+            cursor: nwse-resize;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .draggable-component.selected .resize-handle,
+        .draggable-component:hover .resize-handle {
+            opacity: 1;
+        }
+
+        /* Component Toolbar */
+        .component-toolbar {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--pure-white);
+            border: 1px solid var(--sand);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 100;
+            align-items: center;
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0 0.5rem;
+            border-right: 1px solid var(--sand);
+        }
+
+        .toolbar-section:last-child {
+            border-right: none;
+        }
+
+        .toolbar-label {
+            font-size: 0.7rem;
+            color: var(--stone);
+            font-weight: 600;
+            min-width: 14px;
+            text-align: center;
+        }
+
+        .transform-slider {
+            width: 60px;
+            height: 4px;
+            accent-color: var(--gold);
+            cursor: pointer;
+        }
+
+        .slider-value {
+            font-size: 0.6rem;
+            color: var(--charcoal);
+            min-width: 32px;
+            text-align: right;
+            font-family: monospace;
+        }
+
+        .toolbar-btn {
+            padding: 0.4rem 0.5rem;
+            font-size: 0.85rem;
+            background: var(--ivory);
+            border: 1px solid var(--sand);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--charcoal);
+            min-width: 32px;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--gold);
+            color: white;
+            border-color: var(--gold);
+        }
+
+        .toolbar-btn.delete-btn:hover {
+            background: var(--coral);
+            border-color: var(--coral);
+        }
+
+        .toolbar-actions {
+            gap: 0.35rem;
+        }
+
+        /* Component Controls */
+        .component-controls {
+            padding: 1.25rem 1.5rem;
+            background: var(--pure-white);
+            border-top: 1px solid var(--sand);
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .controls-title {
+            font-family: var(--font-serif);
+            font-size: 0.9rem;
+            color: var(--ink);
+            margin-bottom: 0.75rem;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .component-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--ivory);
+            border: 1px solid var(--sand);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .component-toggle:hover {
+            background: var(--pure-white);
+            border-color: var(--gold);
+            box-shadow: 0 2px 8px rgba(184, 149, 110, 0.1);
+        }
+
+        .component-toggle.active {
+            background: rgba(122, 139, 111, 0.1);
+            border-color: var(--sage);
+        }
+
+        .toggle-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            border: 2px solid var(--sand);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .component-toggle.active .toggle-indicator {
+            background: var(--sage);
+            border-color: var(--sage);
+        }
+
+        .toggle-label {
+            font-size: 0.75rem;
+            color: var(--charcoal);
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .toggle-type {
+            font-size: 0.6rem;
+            color: var(--stone);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.15rem;
+        }
+
+        /* Right Panel - AI Assistant */
+        .assistant-panel {
+            background: var(--cream);
+            color: var(--charcoal);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .assistant-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--sand);
+            background: var(--warm-white);
+        }
+
+        .assistant-title {
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            color: var(--ink);
+        }
+
+        .assistant-mode {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .mode-chip {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: transparent;
+            border: 1px solid var(--sand);
+            border-radius: 20px;
+            cursor: pointer;
+            color: var(--charcoal);
+            transition: all 0.2s ease;
+        }
+
+        .mode-chip.active {
+            background: var(--ink);
+            color: var(--cream);
+            border-color: var(--ink);
+        }
+
+        /* Guardrails Display */
+        .guardrails {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--sand);
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .guardrail-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .guardrail-icon {
+            font-size: 1rem;
+        }
+
+        .guardrail-text {
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: var(--charcoal);
+        }
+
+        .guardrail-text strong {
+            color: var(--ink);
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.25rem;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+        }
+
+        .chat-message.ai {
+            padding-left: 0;
+        }
+
+        .chat-message.user {
+            text-align: right;
+        }
+
+        .chat-bubble {
+            display: inline-block;
+            max-width: 90%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .chat-message.ai .chat-bubble {
+            background: var(--warm-white);
+            border: 1px solid var(--sand);
+            text-align: left;
+        }
+
+        .chat-message.user .chat-bubble {
+            background: var(--ink);
+            color: var(--cream);
+        }
+
+        /* Chat Input */
+        .chat-input-area {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--sand);
+            background: var(--warm-white);
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--sand);
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            resize: none;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .chat-action {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.65rem;
+            background: rgba(0,0,0,0.05);
+            border: 1px solid var(--sand);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--charcoal);
+        }
+
+        .chat-action:hover {
+            background: var(--ink);
+            color: var(--cream);
+        }
+
+        /* Generate Button */
+        .generate-section {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--sand);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--ink);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(184, 149, 110, 0.4);
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .empty-title {
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-text {
+            font-size: 0.85rem;
+            color: var(--stone);
+            max-width: 300px;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(184, 149, 110, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 149, 110, 0.5);
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+
+    <div class="app-container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">Meal Builder</div>
+                <div class="logo-sub">Visual Configurator</div>
+            </div>
+
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon" id="uploadIcon">📊</div>
+                <div class="upload-text" id="uploadText">Upload Menu Workbook</div>
+                <div class="upload-hint">Drop .xlsx file or click to browse</div>
+                <div class="file-name" id="fileName"></div>
+            </div>
+
+            <div class="meal-list" id="mealList">
+                <div class="empty-state" style="height: auto; padding: 2.5rem 1rem;">
+                    <div style="font-size: 3rem; opacity: 0.25;">🍱</div>
+                    <div style="font-family: var(--font-serif); font-size: 1rem; color: var(--charcoal); margin-top: 1rem;">No Menu Loaded</div>
+                    <div style="font-size: 0.75rem; color: var(--stone); margin-top: 0.5rem; line-height: 1.5;">Upload your weekly Menu Workbook to see all meals and components</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Configurator -->
+        <div class="configurator">
+            <div class="config-header">
+                <div>
+                    <div class="config-title" id="configTitle">Select a Meal</div>
+                    <div class="config-subtitle" id="configSubtitle">Upload menu workbook to begin</div>
+                </div>
+                <div class="view-toggle">
+                    <button class="view-btn active" onclick="setView('visual')">Visual</button>
+                    <button class="view-btn" onclick="setView('data')">Data</button>
+                </div>
+            </div>
+
+            <div class="visual-canvas" id="visualCanvas">
+                <div class="bento-container" id="bentoContainer">
+                    <svg class="bento-svg" viewBox="0 0 450 320" id="bentoSvg">
+                        <!-- Prep Table Background -->
+                        <defs>
+                            <linearGradient id="tableGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#9a9a9a;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#a8a8a8;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#929292;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="bentoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#d4d8c8;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#b8bcaa;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+                            </filter>
+                            <filter id="innerShadow" x="-10%" y="-10%" width="120%" height="120%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.4"/>
+                            </filter>
+                        </defs>
+
+                        <!-- Table Surface -->
+                        <rect x="0" y="0" width="450" height="320" fill="url(#tableGradient)" />
+
+                        <!-- Bento Container (25oz Oval) -->
+                        <ellipse cx="225" cy="160" rx="180" ry="130" fill="url(#bentoGradient)" filter="url(#shadow)" id="bentoBase"/>
+
+                        <!-- Inner Bowl -->
+                        <ellipse cx="225" cy="155" rx="165" ry="115" fill="#2a2a2a" id="bentoInner"/>
+
+                        <!-- Draggable Components Layer -->
+                        <g id="componentsLayer"></g>
+
+                        <!-- Placeholder text when no meal selected -->
+                        <text x="225" y="160" text-anchor="middle" fill="#888" font-size="14" id="placeholderText">Select a meal to visualize</text>
+                    </svg>
+                </div>
+
+                <!-- Component Toolbar - Full Transform Controls -->
+                <div class="component-toolbar" id="componentToolbar" style="display: none;">
+                    <div class="toolbar-section">
+                        <button class="toolbar-btn" onclick="bringToFront()">⬆️</button>
+                        <button class="toolbar-btn" onclick="sendToBack()">⬇️</button>
+                    </div>
+                    <div class="toolbar-section">
+                        <label class="toolbar-label">W</label>
+                        <input type="range" class="transform-slider" id="widthSlider" min="20" max="300" value="100" oninput="updateTransform('scaleX', this.value/100)">
+                        <span class="slider-value" id="widthValue">100%</span>
+                    </div>
+                    <div class="toolbar-section">
+                        <label class="toolbar-label">H</label>
+                        <input type="range" class="transform-slider" id="heightSlider" min="20" max="300" value="100" oninput="updateTransform('scaleY', this.value/100)">
+                        <span class="slider-value" id="heightValue">100%</span>
+                    </div>
+                    <div class="toolbar-section">
+                        <label class="toolbar-label">↻</label>
+                        <input type="range" class="transform-slider" id="rotateSlider" min="-180" max="180" value="0" oninput="updateTransform('rotate', this.value)">
+                        <span class="slider-value" id="rotateValue">0°</span>
+                    </div>
+                    <div class="toolbar-section">
+                        <label class="toolbar-label">⟋</label>
+                        <input type="range" class="transform-slider" id="skewXSlider" min="-45" max="45" value="0" oninput="updateTransform('skewX', this.value)">
+                        <span class="slider-value" id="skewXValue">0°</span>
+                    </div>
+                    <div class="toolbar-section">
+                        <label class="toolbar-label">⟍</label>
+                        <input type="range" class="transform-slider" id="skewYSlider" min="-45" max="45" value="0" oninput="updateTransform('skewY', this.value)">
+                        <span class="slider-value" id="skewYValue">0°</span>
+                    </div>
+                    <div class="toolbar-section toolbar-actions">
+                        <button class="toolbar-btn" onclick="resetTransform()">↺</button>
+                        <button class="toolbar-btn" onclick="duplicateSelected()">📋</button>
+                        <button class="toolbar-btn delete-btn" onclick="deleteSelected()">🗑️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-controls" id="componentControls">
+                <div class="control-grid" id="controlGrid">
+                    <!-- Component toggles will be dynamically added -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - AI Assistant -->
+        <div class="assistant-panel">
+            <div class="assistant-header">
+                <div class="assistant-title">AI Sous Chef</div>
+                <div class="assistant-mode">
+                    <button class="mode-chip active" onclick="setMode('guardrails')">Guardrails</button>
+                    <button class="mode-chip" onclick="setMode('elevate')">Elevate</button>
+                    <button class="mode-chip" onclick="setMode('ocean')">Blue Ocean</button>
+                    <button class="mode-chip" onclick="setMode('books')">Book Wisdom</button>
+                </div>
+            </div>
+
+            <div class="guardrails" id="guardrailsPanel">
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">📊</span>
+                    <span class="guardrail-text">Upload a menu workbook to get AI-powered suggestions and guardrails.</span>
+                </div>
+            </div>
+
+            <div class="chat-area" id="chatArea">
+                <div class="chat-message ai">
+                    <div class="chat-bubble">
+                        Welcome to the Meal Builder! I'm your AI Sous Chef, trained on Julie and Stephen's vision for Methodology.
+
+                        Upload your Menu Workbook and select a meal to begin. I'll help you:
+
+                        • **Visualize** the perfect plating
+                        • **Optimize** for nutrition and appeal
+                        • **Elevate** with Blue Ocean thinking
+                        • **Book Wisdom** from Seth Godin, Ogilvy, Cialdini & more
+                        • **Generate** photorealistic images
+                    </div>
+                </div>
+                <div class="chat-message ai">
+                    <div class="chat-bubble" style="background: linear-gradient(135deg, rgba(184, 149, 110, 0.1) 0%, rgba(212, 184, 150, 0.1) 100%); border: 1px solid var(--gold-light);">
+                        <span style="font-size: 0.7rem; color: var(--gold); font-weight: 600;">BOOK WISDOM</span><br>
+                        <em style="font-family: var(--font-serif);">"Marketing is the generous act of helping others become who they seek to become."</em>
+                        <br><span style="font-size: 0.7rem; color: var(--stone);">— This Is Marketing, Seth Godin</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <textarea class="chat-input" id="chatInput" placeholder="Ask about this meal..." rows="2"></textarea>
+                <div class="chat-actions">
+                    <button class="chat-action" onclick="askAI('nutrition')">📊 Nutrition Check</button>
+                    <button class="chat-action" onclick="askAI('elevate')">✨ Elevate This</button>
+                    <button class="chat-action" onclick="askAI('plating')">🍽️ Plating Tips</button>
+                    <button class="chat-action" onclick="showBookInsight()">📚 Book Insight</button>
+                </div>
+            </div>
+
+            <div class="generate-section">
+                <button class="generate-btn" onclick="generateImage()">
+                    🍌 Generate with Nano Banana
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let menuData = null;
+        let meals = [];
+        let selectedMeal = null;
+        let activeComponents = new Set();
+        let currentMode = 'guardrails';
+        let currentView = 'visual';
+        let apiKey = localStorage.getItem('gemini_api_key') || '';
+
+        // Book Wisdom Knowledge Base - Lessons from your book collection
+        const bookWisdom = {
+            // MARKETING BOOKS
+            marketing: {
+                purpleCow: {
+                    title: "Purple Cow",
+                    author: "Seth Godin",
+                    category: "Remarkability",
+                    keyLessons: [
+                        "In a crowded marketplace, fitting in is failing. Being remarkable is the only way to cut through.",
+                        "Safe is risky. The riskiest thing you can do is be boring.",
+                        "Design products that remarkable people will want to talk about.",
+                        "The 'TV-Industrial Complex' is dead. Word of mouth and being remarkable is the new marketing."
+                    ],
+                    mealApplication: "Is this meal so visually stunning or conceptually unique that customers will photograph and share it? What makes it a 'Purple Cow' among meal deliveries?"
+                },
+                allMarketersAreLiars: {
+                    title: "All Marketers Are Liars",
+                    author: "Seth Godin",
+                    category: "Story & Authenticity",
+                    keyLessons: [
+                        "Marketers tell stories. Great marketers tell stories that consumers want to believe.",
+                        "Authenticity is paramount. The story must be consistent with the product experience.",
+                        "People don't buy features, they buy feelings and worldviews.",
+                        "The story you tell yourself about a $4 wine vs a $40 wine changes how it actually tastes."
+                    ],
+                    mealApplication: "What story does this meal tell? Does every component reinforce the narrative of premium, health-conscious, chef-crafted excellence?"
+                },
+                thisIsMarketing: {
+                    title: "This Is Marketing",
+                    author: "Seth Godin",
+                    category: "Connection",
+                    keyLessons: [
+                        "Marketing is the generous act of helping others become who they seek to become.",
+                        "People like us do things like this. Tribe matters.",
+                        "Find the smallest viable audience and obsess over serving them.",
+                        "Status roles are real. Does your product help people move up or maintain status?"
+                    ],
+                    mealApplication: "Who is 'people like us' for this meal? What status does eating this meal convey? How does it help your customer become who they want to be?"
+                },
+                breakthroughAdvertising: {
+                    title: "Breakthrough Advertising",
+                    author: "Eugene Schwartz",
+                    category: "Desire & Market Awareness",
+                    keyLessons: [
+                        "You cannot create desire. You can only channel existing desires onto your product.",
+                        "The first task is to acknowledge the desire, then demonstrate how your product satisfies it.",
+                        "Market sophistication determines your approach - from direct claims to unique mechanisms.",
+                        "Intensify desires by connecting to deeper wants: health, status, freedom, security."
+                    ],
+                    mealApplication: "What deep desire does this meal satisfy? Health optimization? Time freedom? Self-care? Premium status? Channel those desires."
+                },
+                scientificAdvertising: {
+                    title: "Scientific Advertising",
+                    author: "Claude Hopkins",
+                    category: "Persuasion Fundamentals",
+                    keyLessons: [
+                        "Advertising is salesmanship in print. Every ad must serve a purpose.",
+                        "Be specific. 'Cleans teeth whiter' beats 'better than others'.",
+                        "Offer service, not product. Sell the benefit, not the thing.",
+                        "Test everything. Headlines, offers, angles. Let data guide decisions."
+                    ],
+                    mealApplication: "Be specific about benefits: '32g protein' not 'high protein'. '6 colors of vegetables' not 'colorful'. Specificity sells."
+                },
+                influence: {
+                    title: "Influence: The Psychology of Persuasion",
+                    author: "Robert Cialdini",
+                    category: "Persuasion Psychology",
+                    keyLessons: [
+                        "Reciprocity: Give before you ask. Free value creates obligation.",
+                        "Social Proof: 'Join 10,000 health-conscious customers' triggers tribe behavior.",
+                        "Scarcity: Limited availability increases perceived value.",
+                        "Authority: Chef credentials, nutritionist backing, awards signal expertise.",
+                        "Liking: We buy from people and brands we like. Personality matters.",
+                        "Commitment: Small commitments lead to larger ones. Start with a trial."
+                    ],
+                    mealApplication: "How can this meal leverage authority (chef-crafted), social proof (customer testimonials), and scarcity (limited weekly menu)?"
+                },
+                positioning: {
+                    title: "Positioning: The Battle for Your Mind",
+                    author: "Al Ries & Jack Trout",
+                    category: "Mental Real Estate",
+                    keyLessons: [
+                        "Positioning is not what you do to a product. It's what you do to the mind of the prospect.",
+                        "Own a word in the prospect's mind. Volvo = Safety. What does Methodology own?",
+                        "Be first in a new category if you can't be first in an existing one.",
+                        "Attack the leader's weakness, not their strength. Find the gap."
+                    ],
+                    mealApplication: "What mental real estate does Methodology own? 'Premium health meal delivery'? 'Chef-quality wellness'? Every meal must reinforce this position."
+                },
+                storyBrand: {
+                    title: "Building a StoryBrand",
+                    author: "Donald Miller",
+                    category: "Story Framework",
+                    keyLessons: [
+                        "Your customer is the hero, not your brand. Your brand is the guide.",
+                        "Characters want something, encounter problems, meet a guide, receive a plan, are called to action, avoid failure, achieve success.",
+                        "External problems reflect internal desires. The meal isn't just food, it's who they become.",
+                        "Clear beats clever. Confusion loses customers."
+                    ],
+                    mealApplication: "Customer hero wants: optimal health + convenience. Problem: no time for quality nutrition. Methodology is the guide. This meal is part of the plan."
+                },
+                blueOcean: {
+                    title: "Blue Ocean Strategy",
+                    author: "W. Chan Kim",
+                    category: "Value Innovation",
+                    keyLessons: [
+                        "Create uncontested market space rather than competing in crowded markets.",
+                        "Four Actions: Eliminate, Reduce, Raise, Create.",
+                        "Value innovation: Pursue differentiation AND low cost simultaneously.",
+                        "Focus on non-customers to find untapped demand."
+                    ],
+                    mealApplication: "What industry factors can this meal ELIMINATE (preservatives), REDUCE (prep time), RAISE (ingredient quality), CREATE (chef-health hybrid)?"
+                },
+                ogilvy: {
+                    title: "Ogilvy on Advertising",
+                    author: "David Ogilvy",
+                    category: "Advertising Craft",
+                    keyLessons: [
+                        "The consumer is not a moron. She's your wife. Don't talk down.",
+                        "The more informative your advertising, the more persuasive it will be.",
+                        "Big ideas are simple ideas. They can be described in one sentence.",
+                        "On average, 5x more people read the headline than the body copy."
+                    ],
+                    mealApplication: "What's the one-sentence 'Big Idea' for this meal? Lead with the most compelling benefit. Respect the customer's intelligence."
+                },
+                luxuryStrategy: {
+                    title: "The Luxury Strategy",
+                    author: "JN Kapferer",
+                    category: "Premium Positioning",
+                    keyLessons: [
+                        "Luxury is not premium. Premium is better, luxury is different.",
+                        "Cultivate rarity. Don't chase volume. Maintain margins.",
+                        "Don't respond to demand, create desire. Never discount.",
+                        "Heritage, craftsmanship, and time are pillars of luxury."
+                    ],
+                    mealApplication: "Is this meal premium or luxury? What makes it worth the price? Heritage of chef expertise, craftsmanship of preparation, time-honored techniques."
+                },
+                unreasonableHospitality: {
+                    title: "Unreasonable Hospitality",
+                    author: "Will Guidara",
+                    category: "Service Excellence",
+                    keyLessons: [
+                        "Hospitality is how you make people feel. Service is executing tasks.",
+                        "Look for opportunities to be unreasonably generous.",
+                        "Personalization at scale is possible. Remember preferences, anticipate needs.",
+                        "Create legends. Stories customers tell about remarkable experiences."
+                    ],
+                    mealApplication: "What 'unreasonable' touch can elevate this meal experience? Handwritten notes? Unexpected extras? Personal touches that create legends?"
+                }
+            },
+            // NUTRITION/HEALTH BOOKS
+            nutrition: {
+                eatingOnWildSide: {
+                    title: "Eating on the Wild Side",
+                    author: "Jo Robinson",
+                    category: "Nutrient Density",
+                    keyLessons: [
+                        "Wild varieties of plants have 10-100x more phytonutrients than modern cultivars.",
+                        "Color equals nutrition. Deeply colored produce = more antioxidants.",
+                        "Storage and preparation matter. Some nutrients increase with cutting/crushing.",
+                        "Heirloom and wild varieties are worth the premium for nutrient density."
+                    ],
+                    mealApplication: "Does this meal feature deeply pigmented vegetables? Heirloom varieties? Are ingredients prepared to maximize nutrient availability?"
+                },
+                deepNutrition: {
+                    title: "Deep Nutrition",
+                    author: "Catherine Shanahan",
+                    category: "Traditional Foods",
+                    keyLessons: [
+                        "Four Pillars: Fresh plants, fermented foods, meat on the bone, organ meats.",
+                        "Traditional preparation methods unlock nutrition. Fermentation, slow cooking, sprouting.",
+                        "Factory vegetable oils are inflammatory. Traditional fats heal.",
+                        "Nutrition affects gene expression across generations."
+                    ],
+                    mealApplication: "Does this meal honor traditional preparation? Are fats from quality sources? Is there fermentation or bone broth elements?"
+                },
+                glucoseGoddess: {
+                    title: "Glucose Revolution",
+                    author: "Jessie Inchauspe",
+                    category: "Blood Sugar Balance",
+                    keyLessons: [
+                        "Eat foods in order: fiber first, then protein/fat, then starches/sugars.",
+                        "Vinegar before meals flattens the glucose spike by 30%.",
+                        "Post-meal movement (even 10 min walk) significantly reduces glucose impact.",
+                        "Savory breakfast beats sweet breakfast for all-day energy."
+                    ],
+                    mealApplication: "Is this meal designed for optimal glucose response? Fiber-rich vegetables first, quality protein, healthy fats, minimal refined carbs?"
+                },
+                foreverStrong: {
+                    title: "Forever Strong",
+                    author: "Gabrielle Lyon",
+                    category: "Muscle-Centric Health",
+                    keyLessons: [
+                        "The problem isn't being overfat, it's being undermuscled.",
+                        "Protein is the most important macronutrient. Aim for 1g per lb ideal body weight.",
+                        "Distribute protein evenly across meals. 30-50g per meal minimum.",
+                        "Muscle is the organ of longevity. Optimize for muscle protein synthesis."
+                    ],
+                    mealApplication: "Does this meal deliver 30g+ high-quality protein? Is protein from complete sources? Supporting muscle-centric health?"
+                }
+            }
+        };
+
+        // Component colors for visualization
+        const componentColors = {
+            base: '#3d5c3d',      // Dark green for greens base
+            protein: '#d4a574',   // Tan/brown for proteins
+            vegetable: '#8b4d8b', // Purple for veg like cabbage
+            vegetable2: '#d4a030', // Golden for squash
+            sauce: '#e8e4dc',     // Cream for sauce cup
+            topping: '#c9b896',   // Light tan for toppings
+            garnish: '#90c090',   // Light green for garnish
+            herb: '#2d4a2d'       // Dark green for herbs
+        };
+
+        // Handle file upload
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const uploadZone = document.getElementById('uploadZone');
+            const uploadIcon = document.getElementById('uploadIcon');
+            const uploadText = document.getElementById('uploadText');
+            const fileName = document.getElementById('fileName');
+
+            uploadZone.classList.add('has-file');
+            uploadIcon.textContent = '✓';
+            uploadText.textContent = 'Menu Loaded';
+            fileName.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                // Parse the Workbook Menu sheet
+                parseMenuWorkbook(workbook);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Parse menu workbook
+        function parseMenuWorkbook(workbook) {
+            const sheet = workbook.Sheets['Workbook Menu'];
+            if (!sheet) {
+                alert('Could not find "Workbook Menu" sheet');
+                return;
+            }
+
+            const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            // Find the header row and data
+            meals = [];
+            let currentMeal = null;
+
+            for (let i = 3; i < rawData.length; i++) {
+                const row = rawData[i];
+                if (!row || row.length < 11) continue;
+
+                const mealCode = row[9];  // Meal/Component column
+                const itemName = row[10]; // Name column
+
+                if (!mealCode || !itemName) continue;
+
+                // Check if this is a main meal row (starts with "Meal")
+                if (mealCode.toString().includes('Meal') && !itemName.toString().startsWith('(')) {
+                    // Save previous meal
+                    if (currentMeal) {
+                        meals.push(currentMeal);
+                    }
+
+                    // Extract meal letter and vegan status
+                    const isVegan = mealCode.includes('Vegan');
+                    const letterMatch = mealCode.match(/Meal\s+([A-Z])/i);
+                    const letter = letterMatch ? letterMatch[1] : '?';
+
+                    currentMeal = {
+                        code: mealCode.trim(),
+                        letter: letter,
+                        isVegan: isVegan,
+                        name: itemName,
+                        components: [],
+                        container: row[20] || '25oz Oval Bento',
+                        heatingInstructions: row[22] || '',
+                        platingImage: row[24] || ''
+                    };
+                } else if (currentMeal && itemName.toString().startsWith('(')) {
+                    // This is a component
+                    const typeMatch = itemName.match(/^\(([^)]+)\)/);
+                    const type = typeMatch ? typeMatch[1].toUpperCase() : 'OTHER';
+                    const name = itemName.replace(/^\([^)]+\)\s*/, '');
+
+                    currentMeal.components.push({
+                        type: type,
+                        name: name,
+                        fullName: itemName,
+                        active: true
+                    });
+                }
+            }
+
+            // Don't forget the last meal
+            if (currentMeal) {
+                meals.push(currentMeal);
+            }
+
+            console.log('Parsed meals:', meals);
+            renderMealList();
+        }
+
+        // Render meal list in sidebar
+        function renderMealList() {
+            const container = document.getElementById('mealList');
+
+            // Group by letter
+            const grouped = {};
+            meals.forEach(meal => {
+                const key = meal.letter;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(meal);
+            });
+
+            let html = '';
+            Object.keys(grouped).sort().forEach(letter => {
+                html += `<div class="meal-category">
+                    <div class="category-header">Meal ${letter}</div>`;
+
+                grouped[letter].forEach((meal, idx) => {
+                    const globalIdx = meals.indexOf(meal);
+                    html += `
+                        <div class="meal-item" onclick="selectMeal(${globalIdx})" data-idx="${globalIdx}">
+                            <div class="meal-code ${meal.isVegan ? 'vegan' : ''}">${meal.letter}${meal.isVegan ? 'V' : ''}</div>
+                            <div class="meal-name">${meal.name}</div>
+                        </div>`;
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Select a meal
+        function selectMeal(idx) {
+            selectedMeal = meals[idx];
+            activeComponents = new Set(selectedMeal.components.map((_, i) => i));
+
+            // Update UI
+            document.querySelectorAll('.meal-item').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`[data-idx="${idx}"]`).classList.add('selected');
+
+            document.getElementById('configTitle').textContent = `Meal ${selectedMeal.letter}${selectedMeal.isVegan ? 'V' : ''}`;
+            document.getElementById('configSubtitle').textContent = selectedMeal.name;
+            document.getElementById('placeholderText').style.display = 'none';
+
+            renderComponentControls();
+            renderBentoVisualization();
+            updateGuardrails();
+        }
+
+        // Render component controls
+        function renderComponentControls() {
+            const grid = document.getElementById('controlGrid');
+
+            let html = '';
+            selectedMeal.components.forEach((comp, idx) => {
+                const isActive = activeComponents.has(idx);
+                html += `
+                    <div class="component-toggle ${isActive ? 'active' : ''}" onclick="toggleComponent(${idx})">
+                        <div class="toggle-indicator"></div>
+                        <div>
+                            <div class="toggle-label">${comp.name.substring(0, 30)}${comp.name.length > 30 ? '...' : ''}</div>
+                            <div class="toggle-type">${comp.type}</div>
+                        </div>
+                    </div>`;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        // Toggle component
+        function toggleComponent(idx) {
+            if (activeComponents.has(idx)) {
+                activeComponents.delete(idx);
+            } else {
+                activeComponents.add(idx);
+            }
+
+            renderComponentControls();
+            renderBentoVisualization();
+            updateGuardrails();
+        }
+
+        // Interactive Component State
+        let placedComponents = [];
+        let selectedComponent = null;
+        let isDragging = false;
+        let isResizing = false;
+        let dragOffset = { x: 0, y: 0 };
+        let componentIdCounter = 0;
+
+        // Default transform for new components
+        const defaultTransform = {
+            scaleX: 1,
+            scaleY: 1,
+            rotate: 0,
+            skewX: 0,
+            skewY: 0
+        };
+
+        // Component shape templates
+        const componentShapes = {
+            'VEGETABLE': (name) => {
+                if (name.toLowerCase().includes('cabbage')) return { type: 'ellipse', color: '#8b4d8b', rx: 45, ry: 35 };
+                if (name.toLowerCase().includes('squash')) return { type: 'ellipse', color: '#d4a030', rx: 40, ry: 30 };
+                if (name.toLowerCase().includes('cauliflower')) return { type: 'ellipse', color: '#e8dcc8', rx: 35, ry: 28 };
+                if (name.toLowerCase().includes('chard') || name.toLowerCase().includes('kale')) return { type: 'ellipse', color: '#3d5c3d', rx: 50, ry: 35 };
+                if (name.toLowerCase().includes('broccoli')) return { type: 'ellipse', color: '#4a7c4a', rx: 30, ry: 25 };
+                if (name.toLowerCase().includes('mushroom')) return { type: 'ellipse', color: '#8b7355', rx: 25, ry: 20 };
+                return { type: 'ellipse', color: '#6a8a5a', rx: 35, ry: 28 };
+            },
+            'SEA': (name) => {
+                if (name.toLowerCase().includes('salmon')) return { type: 'rect', color: '#d4a574', width: 80, height: 45, rx: 8 };
+                return { type: 'rect', color: '#c9a088', width: 70, height: 40, rx: 6 };
+            },
+            'LAND': (name) => {
+                if (name.toLowerCase().includes('meatball')) return { type: 'circles', color: '#8b5a3c', r: 18, count: 3 };
+                if (name.toLowerCase().includes('chicken')) return { type: 'rect', color: '#d4b896', width: 75, height: 40, rx: 5 };
+                return { type: 'rect', color: '#c9a088', width: 70, height: 40, rx: 5 };
+            },
+            'SCOOP/VEGAN': (name) => {
+                if (name.toLowerCase().includes('tofu')) return { type: 'rect', color: '#f5f0e0', width: 60, height: 35, rx: 4 };
+                if (name.toLowerCase().includes('meatball')) return { type: 'circles', color: '#7a6a5a', r: 16, count: 3 };
+                return { type: 'rect', color: '#d4c9a8', width: 55, height: 30, rx: 4 };
+            },
+            'SAUCE': () => ({ type: 'saucecup', color: '#f5f5f0', r: 20 }),
+            'TOPPING': () => ({ type: 'scatter', color: '#c9b896', r: 4, count: 5 }),
+            'HERB': () => ({ type: 'scatter', color: '#2d5a2d', r: 3, count: 6 }),
+            'GARNISH': () => ({ type: 'scatter', color: '#90c090', r: 3, count: 4 }),
+            'VEGAN': (name) => {
+                if (name.toLowerCase().includes('bean')) return { type: 'ellipse', color: '#d4c9a8', rx: 50, ry: 35 };
+                return { type: 'ellipse', color: '#a8b89f', rx: 40, ry: 30 };
+            }
+        };
+
+        // Default positions for component types
+        const defaultPositions = {
+            'VEGETABLE': [{ x: 100, y: 140 }, { x: 320, y: 150 }, { x: 180, y: 200 }],
+            'SEA': [{ x: 225, y: 145 }],
+            'LAND': [{ x: 225, y: 145 }],
+            'SCOOP/VEGAN': [{ x: 225, y: 145 }],
+            'SAUCE': [{ x: 110, y: 210 }, { x: 340, y: 100 }],
+            'TOPPING': [{ x: 200, y: 120 }],
+            'HERB': [{ x: 250, y: 115 }],
+            'GARNISH': [{ x: 280, y: 130 }],
+            'VEGAN': [{ x: 225, y: 170 }]
+        };
+
+        // Detect container type from meal
+        function getContainerType(meal) {
+            if (!meal) return 'bento';
+            const container = (meal.container || '').toLowerCase();
+            const name = (meal.name || '').toLowerCase();
+
+            if (container.includes('jar') || name.includes('jar') || name.includes('soup') || name.includes('chili') || name.includes('stew')) {
+                return 'jar';
+            }
+            if (container.includes('bottle') || name.includes('juice') || name.includes('smoothie') || name.includes('drink')) {
+                return 'bottle';
+            }
+            return 'bento';
+        }
+
+        // Render container SVG based on type
+        function renderContainerSVG(containerType) {
+            const svg = document.getElementById('bentoSvg');
+
+            // Remove all existing container elements (keep table and defs)
+            const elementsToRemove = svg.querySelectorAll('ellipse, rect:not([fill="url(#tableGradient)"])');
+            elementsToRemove.forEach(el => {
+                if (el.getAttribute('fill') !== 'url(#tableGradient)') {
+                    el.remove();
+                }
+            });
+
+            // Get the table rect (first element after defs)
+            const tableRect = svg.querySelector('rect');
+
+            if (containerType === 'jar') {
+                // 16oz Mason Jar visualization - open top, no lid
+
+                // Jar body (rounded rectangle with glass effect)
+                const jarBody = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                jarBody.setAttribute('id', 'bentoBase');
+                jarBody.setAttribute('x', '150');
+                jarBody.setAttribute('y', '50');
+                jarBody.setAttribute('width', '150');
+                jarBody.setAttribute('height', '230');
+                jarBody.setAttribute('rx', '20');
+                jarBody.setAttribute('fill', 'rgba(255, 255, 255, 0.3)');
+                jarBody.setAttribute('stroke', 'rgba(255, 255, 255, 0.6)');
+                jarBody.setAttribute('stroke-width', '3');
+                jarBody.setAttribute('filter', 'url(#shadow)');
+
+                // Jar inner (darker for contents)
+                const jarInner = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                jarInner.setAttribute('id', 'bentoInner');
+                jarInner.setAttribute('x', '158');
+                jarInner.setAttribute('y', '58');
+                jarInner.setAttribute('width', '134');
+                jarInner.setAttribute('height', '214');
+                jarInner.setAttribute('rx', '15');
+                jarInner.setAttribute('fill', '#2a2a2a');
+
+                // Jar rim (top edge only, no lid)
+                const jarRim = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                jarRim.setAttribute('x', '145');
+                jarRim.setAttribute('y', '45');
+                jarRim.setAttribute('width', '160');
+                jarRim.setAttribute('height', '10');
+                jarRim.setAttribute('rx', '3');
+                jarRim.setAttribute('fill', 'rgba(255, 255, 255, 0.5)');
+                jarRim.setAttribute('stroke', 'rgba(255, 255, 255, 0.7)');
+                jarRim.setAttribute('stroke-width', '1');
+
+                svg.insertBefore(jarBody, document.getElementById('componentsLayer'));
+                svg.insertBefore(jarInner, document.getElementById('componentsLayer'));
+                svg.insertBefore(jarRim, document.getElementById('componentsLayer'));
+
+            } else if (containerType === 'bottle') {
+                // Bottle visualization - open top, no cap
+                const bottleBody = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bottleBody.setAttribute('id', 'bentoBase');
+                bottleBody.setAttribute('x', '175');
+                bottleBody.setAttribute('y', '100');
+                bottleBody.setAttribute('width', '100');
+                bottleBody.setAttribute('height', '180');
+                bottleBody.setAttribute('rx', '15');
+                bottleBody.setAttribute('fill', 'rgba(255, 255, 255, 0.25)');
+                bottleBody.setAttribute('stroke', 'rgba(255, 255, 255, 0.5)');
+                bottleBody.setAttribute('stroke-width', '2');
+                bottleBody.setAttribute('filter', 'url(#shadow)');
+
+                // Bottle neck (open)
+                const bottleNeck = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bottleNeck.setAttribute('x', '200');
+                bottleNeck.setAttribute('y', '55');
+                bottleNeck.setAttribute('width', '50');
+                bottleNeck.setAttribute('height', '50');
+                bottleNeck.setAttribute('rx', '8');
+                bottleNeck.setAttribute('fill', 'rgba(255, 255, 255, 0.25)');
+                bottleNeck.setAttribute('stroke', 'rgba(255, 255, 255, 0.5)');
+                bottleNeck.setAttribute('stroke-width', '2');
+
+                // Bottle inner
+                const bottleInner = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bottleInner.setAttribute('id', 'bentoInner');
+                bottleInner.setAttribute('x', '182');
+                bottleInner.setAttribute('y', '108');
+                bottleInner.setAttribute('width', '86');
+                bottleInner.setAttribute('height', '165');
+                bottleInner.setAttribute('rx', '12');
+                bottleInner.setAttribute('fill', '#4a7c4a');
+
+                // Neck inner (shows liquid in neck)
+                const neckInner = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                neckInner.setAttribute('x', '207');
+                neckInner.setAttribute('y', '62');
+                neckInner.setAttribute('width', '36');
+                neckInner.setAttribute('height', '43');
+                neckInner.setAttribute('rx', '5');
+                neckInner.setAttribute('fill', '#4a7c4a');
+
+                svg.insertBefore(bottleNeck, document.getElementById('componentsLayer'));
+                svg.insertBefore(bottleBody, document.getElementById('componentsLayer'));
+                svg.insertBefore(bottleInner, document.getElementById('componentsLayer'));
+                svg.insertBefore(neckInner, document.getElementById('componentsLayer'));
+
+            } else {
+                // Default: 25oz Oval Bento
+                const bentoBase = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                bentoBase.setAttribute('id', 'bentoBase');
+                bentoBase.setAttribute('cx', '225');
+                bentoBase.setAttribute('cy', '160');
+                bentoBase.setAttribute('rx', '180');
+                bentoBase.setAttribute('ry', '130');
+                bentoBase.setAttribute('fill', 'url(#bentoGradient)');
+                bentoBase.setAttribute('filter', 'url(#shadow)');
+
+                const bentoInner = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                bentoInner.setAttribute('id', 'bentoInner');
+                bentoInner.setAttribute('cx', '225');
+                bentoInner.setAttribute('cy', '155');
+                bentoInner.setAttribute('rx', '165');
+                bentoInner.setAttribute('ry', '115');
+                bentoInner.setAttribute('fill', '#2a2a2a');
+
+                svg.insertBefore(bentoBase, document.getElementById('componentsLayer'));
+                svg.insertBefore(bentoInner, document.getElementById('componentsLayer'));
+            }
+        }
+
+        // Get default positions based on container type
+        function getPositionsForContainer(containerType, compType) {
+            if (containerType === 'jar') {
+                // Vertical stacking for jars
+                const jarPositions = {
+                    'VEGETABLE': [{ x: 225, y: 220 }, { x: 225, y: 170 }, { x: 225, y: 130 }],
+                    'SEA': [{ x: 225, y: 180 }],
+                    'LAND': [{ x: 225, y: 180 }],
+                    'SCOOP/VEGAN': [{ x: 225, y: 180 }],
+                    'SAUCE': [{ x: 225, y: 240 }],
+                    'TOPPING': [{ x: 225, y: 100 }],
+                    'HERB': [{ x: 225, y: 90 }],
+                    'GARNISH': [{ x: 225, y: 85 }],
+                    'VEGAN': [{ x: 225, y: 180 }]
+                };
+                return jarPositions[compType] || jarPositions['VEGETABLE'];
+            } else if (containerType === 'bottle') {
+                // Centered for bottles (liquids layer)
+                return [{ x: 225, y: 180 }];
+            }
+            // Default bento positions
+            return defaultPositions[compType] || defaultPositions['VEGETABLE'];
+        }
+
+        // Render visualization with draggable components
+        function renderBentoVisualization() {
+            if (!selectedMeal) return;
+
+            // Detect and render appropriate container
+            const containerType = getContainerType(selectedMeal);
+            renderContainerSVG(containerType);
+
+            // Update subtitle to show container type
+            const containerNames = { bento: '25oz Oval Bento', jar: '16oz Mason Jar', bottle: 'Bottle' };
+            document.getElementById('configSubtitle').textContent = `${selectedMeal.name} • ${containerNames[containerType]}`;
+
+            const componentsLayer = document.getElementById('componentsLayer');
+            componentsLayer.innerHTML = '';
+            placedComponents = [];
+            selectedComponent = null;
+            document.getElementById('componentToolbar').style.display = 'none';
+
+            // Get active components
+            const active = selectedMeal.components.filter((_, i) => activeComponents.has(i));
+
+            // Track positions used per type
+            const positionIndex = {};
+
+            active.forEach((comp, idx) => {
+                const shapeGetter = componentShapes[comp.type] || componentShapes['VEGETABLE'];
+                const shape = shapeGetter(comp.name);
+
+                // Get position based on container type
+                if (!positionIndex[comp.type]) positionIndex[comp.type] = 0;
+                const positions = getPositionsForContainer(containerType, comp.type);
+                const pos = positions[positionIndex[comp.type] % positions.length];
+                positionIndex[comp.type]++;
+
+                // Offset slightly if same position used
+                const offsetX = (positionIndex[comp.type] > positions.length) ? (positionIndex[comp.type] - positions.length) * 30 : 0;
+                const offsetY = (positionIndex[comp.type] > positions.length) ? (positionIndex[comp.type] - positions.length) * 20 : 0;
+
+                const componentData = {
+                    id: componentIdCounter++,
+                    compIdx: idx,
+                    name: comp.name,
+                    type: comp.type,
+                    x: pos.x + offsetX,
+                    y: pos.y + offsetY,
+                    scaleX: 1,
+                    scaleY: 1,
+                    rotate: 0,
+                    skewX: 0,
+                    skewY: 0,
+                    shape: shape
+                };
+
+                placedComponents.push(componentData);
+                renderComponent(componentData);
+            });
+        }
+
+        // Build transform string from component properties
+        function buildTransform(comp) {
+            return `translate(${comp.x}, ${comp.y}) rotate(${comp.rotate}) skewX(${comp.skewX}) skewY(${comp.skewY}) scale(${comp.scaleX}, ${comp.scaleY})`;
+        }
+
+        // Render a single component
+        function renderComponent(comp) {
+            const componentsLayer = document.getElementById('componentsLayer');
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('class', 'draggable-component');
+            g.setAttribute('data-id', comp.id);
+            g.setAttribute('transform', buildTransform(comp));
+
+            let shapeEl;
+            const shape = comp.shape;
+
+            if (shape.type === 'ellipse') {
+                shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                shapeEl.setAttribute('cx', 0);
+                shapeEl.setAttribute('cy', 0);
+                shapeEl.setAttribute('rx', shape.rx);
+                shapeEl.setAttribute('ry', shape.ry);
+                shapeEl.setAttribute('fill', shape.color);
+                shapeEl.setAttribute('filter', 'url(#innerShadow)');
+                g.appendChild(shapeEl);
+            } else if (shape.type === 'rect') {
+                shapeEl = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                shapeEl.setAttribute('x', -shape.width / 2);
+                shapeEl.setAttribute('y', -shape.height / 2);
+                shapeEl.setAttribute('width', shape.width);
+                shapeEl.setAttribute('height', shape.height);
+                shapeEl.setAttribute('rx', shape.rx);
+                shapeEl.setAttribute('fill', shape.color);
+                shapeEl.setAttribute('filter', 'url(#innerShadow)');
+                g.appendChild(shapeEl);
+            } else if (shape.type === 'circles') {
+                // Meatballs - multiple circles
+                for (let i = 0; i < shape.count; i++) {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    const angle = (i / shape.count) * Math.PI * 2;
+                    circle.setAttribute('cx', Math.cos(angle) * 20);
+                    circle.setAttribute('cy', Math.sin(angle) * 15);
+                    circle.setAttribute('r', shape.r);
+                    circle.setAttribute('fill', shape.color);
+                    g.appendChild(circle);
+                }
+            } else if (shape.type === 'saucecup') {
+                // Sauce cup - outer ring and inner
+                const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                outer.setAttribute('cx', 0);
+                outer.setAttribute('cy', 0);
+                outer.setAttribute('r', shape.r);
+                outer.setAttribute('fill', shape.color);
+                outer.setAttribute('stroke', '#ddd');
+                outer.setAttribute('stroke-width', 2);
+                g.appendChild(outer);
+
+                const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                inner.setAttribute('cx', 0);
+                inner.setAttribute('cy', -2);
+                inner.setAttribute('r', shape.r - 4);
+                inner.setAttribute('fill', '#d4c9a8');
+                g.appendChild(inner);
+            } else if (shape.type === 'scatter') {
+                // Scattered small elements
+                for (let i = 0; i < shape.count; i++) {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', (Math.random() - 0.5) * 40);
+                    circle.setAttribute('cy', (Math.random() - 0.5) * 30);
+                    circle.setAttribute('r', shape.r + Math.random() * 2);
+                    circle.setAttribute('fill', shape.color);
+                    g.appendChild(circle);
+                }
+            }
+
+            // Add label on hover
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', 0);
+            label.setAttribute('y', -40);
+            label.setAttribute('text-anchor', 'middle');
+            label.setAttribute('fill', '#333');
+            label.setAttribute('font-size', '10');
+            label.setAttribute('font-family', 'Inter, sans-serif');
+            label.setAttribute('opacity', '0');
+            label.setAttribute('class', 'component-label');
+            label.textContent = comp.name.substring(0, 25);
+            g.appendChild(label);
+
+            // Add event listeners
+            g.addEventListener('mousedown', (e) => startDrag(e, comp.id));
+            g.addEventListener('click', (e) => selectComponent(e, comp.id));
+
+            componentsLayer.appendChild(g);
+        }
+
+        // Start dragging
+        function startDrag(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            selectedComponent = placedComponents.find(c => c.id === id);
+            if (!selectedComponent) return;
+
+            isDragging = true;
+
+            const svg = document.getElementById('bentoSvg');
+            const pt = svg.createSVGPoint();
+            pt.x = e.clientX;
+            pt.y = e.clientY;
+            const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+            dragOffset.x = svgP.x - selectedComponent.x;
+            dragOffset.y = svgP.y - selectedComponent.y;
+
+            const el = document.querySelector(`[data-id="${id}"]`);
+            el.classList.add('dragging');
+
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', endDrag);
+        }
+
+        // Drag handler
+        function onDrag(e) {
+            if (!isDragging || !selectedComponent) return;
+
+            const svg = document.getElementById('bentoSvg');
+            const pt = svg.createSVGPoint();
+            pt.x = e.clientX;
+            pt.y = e.clientY;
+            const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+            selectedComponent.x = svgP.x - dragOffset.x;
+            selectedComponent.y = svgP.y - dragOffset.y;
+
+            // Constrain based on container type
+            const containerType = selectedMeal ? getContainerType(selectedMeal) : 'bento';
+            if (containerType === 'jar') {
+                selectedComponent.x = Math.max(165, Math.min(285, selectedComponent.x));
+                selectedComponent.y = Math.max(80, Math.min(260, selectedComponent.y));
+            } else if (containerType === 'bottle') {
+                selectedComponent.x = Math.max(190, Math.min(260, selectedComponent.x));
+                selectedComponent.y = Math.max(115, Math.min(265, selectedComponent.y));
+            } else {
+                // Bento area
+                selectedComponent.x = Math.max(60, Math.min(390, selectedComponent.x));
+                selectedComponent.y = Math.max(50, Math.min(270, selectedComponent.y));
+            }
+
+            const el = document.querySelector(`[data-id="${selectedComponent.id}"]`);
+            el.setAttribute('transform', buildTransform(selectedComponent));
+        }
+
+        // End dragging
+        function endDrag(e) {
+            isDragging = false;
+
+            if (selectedComponent) {
+                const el = document.querySelector(`[data-id="${selectedComponent.id}"]`);
+                if (el) el.classList.remove('dragging');
+            }
+
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', endDrag);
+        }
+
+        // Select a component
+        function selectComponent(e, id) {
+            e.stopPropagation();
+
+            // Deselect all
+            document.querySelectorAll('.draggable-component').forEach(el => el.classList.remove('selected'));
+
+            selectedComponent = placedComponents.find(c => c.id === id);
+            if (!selectedComponent) return;
+
+            const el = document.querySelector(`[data-id="${id}"]`);
+            el.classList.add('selected');
+
+            // Show toolbar and update all sliders
+            document.getElementById('componentToolbar').style.display = 'flex';
+            updateToolbarSliders();
+        }
+
+        // Update all toolbar sliders to match selected component
+        function updateToolbarSliders() {
+            if (!selectedComponent) return;
+
+            document.getElementById('widthSlider').value = selectedComponent.scaleX * 100;
+            document.getElementById('widthValue').textContent = Math.round(selectedComponent.scaleX * 100) + '%';
+
+            document.getElementById('heightSlider').value = selectedComponent.scaleY * 100;
+            document.getElementById('heightValue').textContent = Math.round(selectedComponent.scaleY * 100) + '%';
+
+            document.getElementById('rotateSlider').value = selectedComponent.rotate;
+            document.getElementById('rotateValue').textContent = Math.round(selectedComponent.rotate) + '°';
+
+            document.getElementById('skewXSlider').value = selectedComponent.skewX;
+            document.getElementById('skewXValue').textContent = Math.round(selectedComponent.skewX) + '°';
+
+            document.getElementById('skewYSlider').value = selectedComponent.skewY;
+            document.getElementById('skewYValue').textContent = Math.round(selectedComponent.skewY) + '°';
+        }
+
+        // Deselect on canvas click
+        document.getElementById('bentoSvg')?.addEventListener('click', (e) => {
+            if (e.target.id === 'bentoSvg' || e.target.id === 'bentoInner' || e.target.id === 'bentoBase') {
+                document.querySelectorAll('.draggable-component').forEach(el => el.classList.remove('selected'));
+                selectedComponent = null;
+                document.getElementById('componentToolbar').style.display = 'none';
+            }
+        });
+
+        // Update any transform property
+        function updateTransform(property, value) {
+            if (!selectedComponent) return;
+
+            selectedComponent[property] = parseFloat(value);
+
+            // Update the SVG element
+            const el = document.querySelector(`[data-id="${selectedComponent.id}"]`);
+            el.setAttribute('transform', buildTransform(selectedComponent));
+
+            // Update the display value
+            const valueDisplays = {
+                scaleX: () => { document.getElementById('widthValue').textContent = Math.round(value * 100) + '%'; },
+                scaleY: () => { document.getElementById('heightValue').textContent = Math.round(value * 100) + '%'; },
+                rotate: () => { document.getElementById('rotateValue').textContent = Math.round(value) + '°'; },
+                skewX: () => { document.getElementById('skewXValue').textContent = Math.round(value) + '°'; },
+                skewY: () => { document.getElementById('skewYValue').textContent = Math.round(value) + '°'; }
+            };
+
+            if (valueDisplays[property]) valueDisplays[property]();
+        }
+
+        // Reset transform to defaults
+        function resetTransform() {
+            if (!selectedComponent) return;
+
+            selectedComponent.scaleX = 1;
+            selectedComponent.scaleY = 1;
+            selectedComponent.rotate = 0;
+            selectedComponent.skewX = 0;
+            selectedComponent.skewY = 0;
+
+            const el = document.querySelector(`[data-id="${selectedComponent.id}"]`);
+            el.setAttribute('transform', buildTransform(selectedComponent));
+
+            updateToolbarSliders();
+        }
+
+        // Bring to front
+        function bringToFront() {
+            if (!selectedComponent) return;
+
+            const componentsLayer = document.getElementById('componentsLayer');
+            const el = document.querySelector(`[data-id="${selectedComponent.id}"]`);
+            componentsLayer.appendChild(el);
+        }
+
+        // Send to back
+        function sendToBack() {
+            if (!selectedComponent) return;
+
+            const componentsLayer = document.getElementById('componentsLayer');
+            const el = document.querySelector(`[data-id="${selectedComponent.id}"]`);
+            componentsLayer.insertBefore(el, componentsLayer.firstChild);
+        }
+
+        // Duplicate selected
+        function duplicateSelected() {
+            if (!selectedComponent) return;
+
+            const newComp = {
+                ...selectedComponent,
+                id: componentIdCounter++,
+                x: selectedComponent.x + 30,
+                y: selectedComponent.y + 20,
+                scaleX: selectedComponent.scaleX,
+                scaleY: selectedComponent.scaleY,
+                rotate: selectedComponent.rotate,
+                skewX: selectedComponent.skewX,
+                skewY: selectedComponent.skewY
+            };
+
+            placedComponents.push(newComp);
+            renderComponent(newComp);
+        }
+
+        // Delete selected
+        function deleteSelected() {
+            if (!selectedComponent) return;
+
+            const el = document.querySelector(`[data-id="${selectedComponent.id}"]`);
+            el.remove();
+
+            placedComponents = placedComponents.filter(c => c.id !== selectedComponent.id);
+            selectedComponent = null;
+            document.getElementById('componentToolbar').style.display = 'none';
+        }
+
+        // Update guardrails
+        function updateGuardrails() {
+            const panel = document.getElementById('guardrailsPanel');
+
+            if (!selectedMeal) {
+                panel.innerHTML = `<div class="guardrail-item">
+                    <span class="guardrail-icon">📊</span>
+                    <span class="guardrail-text">Select a meal to see guardrails and suggestions.</span>
+                </div>`;
+                return;
+            }
+
+            const activeComps = selectedMeal.components.filter((_, i) => activeComponents.has(i));
+            const hasProtein = activeComps.some(c => ['SEA', 'LAND', 'SCOOP/VEGAN'].includes(c.type));
+            const hasVegetable = activeComps.some(c => c.type === 'VEGETABLE');
+            const hasSauce = activeComps.some(c => c.type === 'SAUCE');
+            const hasGarnish = activeComps.some(c => c.type === 'GARNISH');
+
+            let guardrails = [];
+
+            // Check component balance
+            if (!hasProtein) {
+                guardrails.push({ icon: '⚠️', text: '<strong>Missing Protein:</strong> Add a protein source for a complete meal.' });
+            } else {
+                guardrails.push({ icon: '✓', text: '<strong>Protein:</strong> Good protein source included.' });
+            }
+
+            if (!hasVegetable) {
+                guardrails.push({ icon: '⚠️', text: '<strong>Missing Vegetables:</strong> Add color and nutrients with vegetables.' });
+            } else {
+                guardrails.push({ icon: '✓', text: '<strong>Vegetables:</strong> Colorful vegetables for visual appeal.' });
+            }
+
+            if (!hasSauce) {
+                guardrails.push({ icon: '💡', text: '<strong>Sauce Suggestion:</strong> A sauce adds moisture and flavor complexity.' });
+            }
+
+            if (!hasGarnish) {
+                guardrails.push({ icon: '💡', text: '<strong>Julie Says:</strong> "Garnishes make photos pop - microgreens, edible flowers."' });
+            }
+
+            // Color balance
+            const colors = [];
+            activeComps.forEach(c => {
+                if (c.name.toLowerCase().includes('purple') || c.name.toLowerCase().includes('cabbage')) colors.push('purple');
+                if (c.name.toLowerCase().includes('orange') || c.name.toLowerCase().includes('squash') || c.name.toLowerCase().includes('carrot')) colors.push('orange');
+                if (c.name.toLowerCase().includes('green') || c.name.toLowerCase().includes('kale') || c.name.toLowerCase().includes('chard')) colors.push('green');
+            });
+
+            if (colors.length >= 3) {
+                guardrails.push({ icon: '🎨', text: '<strong>Color Balance:</strong> Great color variety for visual appeal!' });
+            } else {
+                guardrails.push({ icon: '💡', text: '<strong>Stephen Says:</strong> "Would this look good on an Erewhon shelf? Add more color contrast."' });
+            }
+
+            panel.innerHTML = guardrails.map(g => `
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">${g.icon}</span>
+                    <span class="guardrail-text">${g.text}</span>
+                </div>
+            `).join('');
+        }
+
+        // Set assistant mode
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-chip').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update guardrails based on mode
+            if (mode === 'ocean') {
+                showBlueOceanSuggestions();
+            } else if (mode === 'elevate') {
+                showElevationSuggestions();
+            } else if (mode === 'books') {
+                showBookWisdom();
+            } else {
+                updateGuardrails();
+            }
+        }
+
+        // Blue Ocean suggestions
+        function showBlueOceanSuggestions() {
+            const panel = document.getElementById('guardrailsPanel');
+            panel.innerHTML = `
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">🌊</span>
+                    <span class="guardrail-text"><strong>Eliminate:</strong> What industry norms can this meal challenge?</span>
+                </div>
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">↑</span>
+                    <span class="guardrail-text"><strong>Raise:</strong> What should be elevated well above industry standard?</span>
+                </div>
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">↓</span>
+                    <span class="guardrail-text"><strong>Reduce:</strong> What factors can be reduced below industry standard?</span>
+                </div>
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">★</span>
+                    <span class="guardrail-text"><strong>Create:</strong> What can be created that the industry has never offered?</span>
+                </div>
+            `;
+        }
+
+        // Elevation suggestions
+        function showElevationSuggestions() {
+            const panel = document.getElementById('guardrailsPanel');
+            panel.innerHTML = `
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">✨</span>
+                    <span class="guardrail-text"><strong>Nobu Test:</strong> Is it simple, clean, balanced, and tasty?</span>
+                </div>
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">🏆</span>
+                    <span class="guardrail-text"><strong>James Beard:</strong> Does it tell a story? Support sustainability?</span>
+                </div>
+                <div class="guardrail-item">
+                    <span class="guardrail-icon">📢</span>
+                    <span class="guardrail-text"><strong>Ogilvy:</strong> What's the "big idea" that makes this memorable?</span>
+                </div>
+            `;
+        }
+
+        // Book Wisdom - Show rotating wisdom from your book collection
+        let currentBookWisdomIndex = 0;
+        let bookWisdomCategory = 'all'; // 'all', 'marketing', 'nutrition'
+
+        function showBookWisdom() {
+            const panel = document.getElementById('guardrailsPanel');
+
+            // Collect all books based on category
+            let allBooks = [];
+            if (bookWisdomCategory === 'all' || bookWisdomCategory === 'marketing') {
+                allBooks = allBooks.concat(Object.values(bookWisdom.marketing));
+            }
+            if (bookWisdomCategory === 'all' || bookWisdomCategory === 'nutrition') {
+                allBooks = allBooks.concat(Object.values(bookWisdom.nutrition));
+            }
+
+            // Get contextual books based on selected meal
+            let contextualWisdom = [];
+            if (selectedMeal) {
+                const activeComps = selectedMeal.components.filter((_, i) => activeComponents.has(i));
+                const hasProtein = activeComps.some(c => ['SEA', 'LAND', 'SCOOP/VEGAN'].includes(c.type));
+                const hasVegetables = activeComps.filter(c => c.type === 'VEGETABLE').length;
+
+                // Always include nutrition books for food context
+                contextualWisdom.push(bookWisdom.nutrition.foreverStrong);
+                contextualWisdom.push(bookWisdom.nutrition.eatingOnWildSide);
+
+                // Include relevant marketing books
+                contextualWisdom.push(bookWisdom.marketing.purpleCow);
+                contextualWisdom.push(bookWisdom.marketing.storyBrand);
+
+                if (hasVegetables >= 3) {
+                    contextualWisdom.push(bookWisdom.nutrition.glucoseGoddess);
+                }
+            } else {
+                // No meal selected - show overview
+                contextualWisdom = allBooks.slice(0, 4);
+            }
+
+            // Rotate through wisdom
+            const currentBook = contextualWisdom[currentBookWisdomIndex % contextualWisdom.length];
+            const nextBook = contextualWisdom[(currentBookWisdomIndex + 1) % contextualWisdom.length];
+            const randomLesson = currentBook.keyLessons[Math.floor(Math.random() * currentBook.keyLessons.length)];
+            const nextLesson = nextBook.keyLessons[Math.floor(Math.random() * nextBook.keyLessons.length)];
+
+            panel.innerHTML = `
+                <div style="margin-bottom: 0.75rem;">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <button class="wisdom-filter ${bookWisdomCategory === 'all' ? 'active' : ''}" onclick="filterBookWisdom('all')" style="padding: 0.25rem 0.5rem; font-size: 0.6rem; border: 1px solid var(--sand); background: ${bookWisdomCategory === 'all' ? 'var(--ink)' : 'transparent'}; color: ${bookWisdomCategory === 'all' ? 'var(--cream)' : 'var(--charcoal)'}; border-radius: 4px; cursor: pointer;">All</button>
+                        <button class="wisdom-filter ${bookWisdomCategory === 'marketing' ? 'active' : ''}" onclick="filterBookWisdom('marketing')" style="padding: 0.25rem 0.5rem; font-size: 0.6rem; border: 1px solid var(--sand); background: ${bookWisdomCategory === 'marketing' ? 'var(--ink)' : 'transparent'}; color: ${bookWisdomCategory === 'marketing' ? 'var(--cream)' : 'var(--charcoal)'}; border-radius: 4px; cursor: pointer;">Marketing</button>
+                        <button class="wisdom-filter ${bookWisdomCategory === 'nutrition' ? 'active' : ''}" onclick="filterBookWisdom('nutrition')" style="padding: 0.25rem 0.5rem; font-size: 0.6rem; border: 1px solid var(--sand); background: ${bookWisdomCategory === 'nutrition' ? 'var(--ink)' : 'transparent'}; color: ${bookWisdomCategory === 'nutrition' ? 'var(--cream)' : 'var(--charcoal)'}; border-radius: 4px; cursor: pointer;">Nutrition</button>
+                        <button onclick="nextBookWisdom()" style="padding: 0.25rem 0.5rem; font-size: 0.6rem; border: 1px solid var(--sand); background: transparent; color: var(--charcoal); border-radius: 4px; cursor: pointer; margin-left: auto;">Next</button>
+                    </div>
+                </div>
+                <div class="guardrail-item" style="background: linear-gradient(135deg, rgba(184, 149, 110, 0.08) 0%, rgba(212, 184, 150, 0.08) 100%); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem;">
+                    <div style="margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.65rem; color: var(--gold); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">${currentBook.category}</span>
+                    </div>
+                    <div style="font-family: var(--font-serif); font-size: 0.9rem; color: var(--ink); margin-bottom: 0.5rem;">
+                        "${randomLesson}"
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--stone);">
+                        — <strong>${currentBook.title}</strong> by ${currentBook.author}
+                    </div>
+                </div>
+                <div class="guardrail-item" style="padding: 0.5rem 0;">
+                    <span class="guardrail-icon">💡</span>
+                    <span class="guardrail-text" style="font-size: 0.75rem;"><strong>Apply to this meal:</strong> ${currentBook.mealApplication}</span>
+                </div>
+                <div class="guardrail-item" style="padding: 0.5rem 0; opacity: 0.7; font-size: 0.7rem;">
+                    <span class="guardrail-icon">📖</span>
+                    <span class="guardrail-text"><strong>Up Next:</strong> "${nextLesson.substring(0, 60)}..."<br><em>— ${nextBook.title}</em></span>
+                </div>
+            `;
+        }
+
+        function filterBookWisdom(category) {
+            bookWisdomCategory = category;
+            currentBookWisdomIndex = 0;
+            showBookWisdom();
+        }
+
+        function nextBookWisdom() {
+            currentBookWisdomIndex++;
+            showBookWisdom();
+        }
+
+        // Get random book insight for chat welcome message
+        function getRandomBookInsight() {
+            const allBooks = [...Object.values(bookWisdom.marketing), ...Object.values(bookWisdom.nutrition)];
+            const randomBook = allBooks[Math.floor(Math.random() * allBooks.length)];
+            const randomLesson = randomBook.keyLessons[Math.floor(Math.random() * randomBook.keyLessons.length)];
+            return { book: randomBook, lesson: randomLesson };
+        }
+
+        // Show book insight in chat
+        function showBookInsight() {
+            const insight = getRandomBookInsight();
+            const mealContext = selectedMeal ? ` for ${selectedMeal.name}` : '';
+
+            const insightHTML = `
+                <div style="margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.65rem; color: var(--gold); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">${insight.book.category}</span>
+                </div>
+                <div style="font-family: var(--font-serif); font-size: 0.95rem; margin-bottom: 0.5rem;">
+                    "${insight.lesson}"
+                </div>
+                <div style="font-size: 0.7rem; color: var(--stone); margin-bottom: 0.75rem;">
+                    — <strong>${insight.book.title}</strong> by ${insight.book.author}
+                </div>
+                <div style="padding-top: 0.5rem; border-top: 1px solid var(--sand); font-size: 0.8rem;">
+                    <strong>Apply${mealContext}:</strong><br>
+                    ${insight.book.mealApplication}
+                </div>
+            `;
+
+            addStyledChatMessage('ai', insightHTML, true);
+        }
+
+        // Add styled chat message (with optional book styling)
+        function addStyledChatMessage(role, html, isBookWisdom = false) {
+            const area = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = `chat-message ${role}`;
+
+            const extraStyle = isBookWisdom ? 'background: linear-gradient(135deg, rgba(184, 149, 110, 0.08) 0%, rgba(212, 184, 150, 0.08) 100%); border: 1px solid var(--gold-light);' : '';
+
+            div.innerHTML = `<div class="chat-bubble" style="${extraStyle}">${html}</div>`;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // Set view mode
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Ask AI
+        async function askAI(type) {
+            if (!selectedMeal) {
+                alert('Please select a meal first.');
+                return;
+            }
+
+            const prompts = {
+                nutrition: `Analyze the nutritional balance of this meal: ${selectedMeal.name}. Components: ${selectedMeal.components.map(c => c.name).join(', ')}`,
+                elevate: `How can we elevate this meal to James Beard Award standards? ${selectedMeal.name}`,
+                plating: `Suggest professional plating techniques for: ${selectedMeal.name} in a 25oz oval bento.`
+            };
+
+            addChatMessage('user', prompts[type]);
+            addChatMessage('ai', 'Analyzing meal...');
+
+            // TODO: Integrate with Gemini API
+        }
+
+        // Add chat message
+        function addChatMessage(role, text) {
+            const area = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = `chat-message ${role}`;
+            div.innerHTML = `<div class="chat-bubble">${text}</div>`;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // Nano Banana Style Descriptions
+        const nanoBananaStyles = {
+            bento: `Professional food photography of a 25oz oval sage-green bento container on a brushed stainless steel prep table.
+                    Shot from 45-degree angle, soft diffused overhead lighting, shallow depth of field.
+                    Components arranged diagonally with intentional negative space.
+                    Premium meal prep aesthetic, Erewhon-quality presentation.
+                    Clean, minimal, Instagram-worthy food styling.`,
+            jar: `Professional food photography of a 16oz glass mason jar with wooden lid on brushed stainless steel surface.
+                  Layered ingredients visible through clear glass, vibrant colors stacked aesthetically.
+                  45-degree angle shot, soft natural lighting, shallow depth of field.
+                  Premium grab-and-go aesthetic, visible texture and freshness.`,
+            bottle: `Professional product photography of a premium juice bottle on brushed stainless steel surface.
+                     Clean label area, vibrant liquid color visible, condensation droplets.
+                     Studio lighting, premium beverage aesthetic.`
+        };
+
+        // Generate image with Nano Banana
+        async function generateImage() {
+            if (!selectedMeal) {
+                alert('Please select a meal first.');
+                return;
+            }
+
+            if (!apiKey) {
+                apiKey = prompt('Enter your Gemini API key:');
+                if (apiKey) localStorage.setItem('gemini_api_key', apiKey);
+                if (!apiKey) return;
+            }
+
+            const activeComps = selectedMeal.components.filter((_, i) => activeComponents.has(i));
+            const containerType = getContainerType(selectedMeal);
+            const stylePrompt = nanoBananaStyles[containerType];
+
+            // Build component description with positions
+            const componentDescriptions = activeComps.map(c => {
+                const placed = placedComponents.find(p => p.name === c.name);
+                let position = '';
+                if (placed) {
+                    if (containerType === 'jar') {
+                        position = placed.y < 120 ? 'at top' : placed.y > 200 ? 'at bottom' : 'in middle';
+                    } else {
+                        position = placed.x < 200 ? 'on left side' : placed.x > 250 ? 'on right side' : 'in center';
+                    }
+                }
+                return `${c.name} (${c.type.toLowerCase()}) ${position}`;
+            }).join(', ');
+
+            const fullPrompt = `${stylePrompt}
+
+Contents: ${componentDescriptions}
+
+Meal: "${selectedMeal.name}"
+Style: Premium health-focused meal delivery, chef-crafted quality.
+DO NOT include any text, labels, or watermarks in the image.`;
+
+            addChatMessage('ai', `🍌 Generating Nano Banana image...<br><br>
+                <span style="font-size: 0.75rem; color: var(--stone);">
+                Container: ${containerType}<br>
+                Components: ${activeComps.length}<br>
+                Estimated time: 10-30 seconds
+                </span>`);
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: fullPrompt }]
+                            }],
+                            generationConfig: {
+                                responseModalities: ["IMAGE", "TEXT"],
+                                responseMimeType: "text/plain"
+                            }
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (data.error) {
+                    addChatMessage('ai', `Error: ${data.error.message}`);
+                    return;
+                }
+
+                // Extract image from response
+                const parts = data.candidates?.[0]?.content?.parts || [];
+                let imageData = null;
+                let textResponse = '';
+
+                for (const part of parts) {
+                    if (part.inlineData?.mimeType?.startsWith('image/')) {
+                        imageData = part.inlineData;
+                    }
+                    if (part.text) {
+                        textResponse = part.text;
+                    }
+                }
+
+                if (imageData) {
+                    const imgSrc = `data:${imageData.mimeType};base64,${imageData.data}`;
+                    addStyledChatMessage('ai', `
+                        <div style="margin-bottom: 0.5rem; font-size: 0.7rem; color: var(--gold); font-weight: 600;">NANO BANANA GENERATED</div>
+                        <img src="${imgSrc}" style="width: 100%; border-radius: 8px; margin-bottom: 0.5rem;" onclick="window.open(this.src, '_blank')">
+                        <div style="font-size: 0.7rem; color: var(--stone);">Click image to open full size</div>
+                        ${textResponse ? `<div style="margin-top: 0.5rem; font-size: 0.8rem;">${textResponse}</div>` : ''}
+                    `, true);
+                } else {
+                    addChatMessage('ai', `Image generation response received but no image data found. Response: ${JSON.stringify(data).substring(0, 200)}...`);
+                }
+
+            } catch (error) {
+                addChatMessage('ai', `Error generating image: ${error.message}`);
+            }
+        }
+
+        // Drag and drop for upload zone
+        const uploadZone = document.getElementById('uploadZone');
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--gold)';
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = 'rgba(184, 149, 110, 0.3)';
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'rgba(184, 149, 110, 0.3)';
+
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                document.getElementById('fileInput').files = e.dataTransfer.files;
+                handleFileUpload({ target: { files: [file] } });
+            }
+        });
+    </script>
+</body>
+</html>

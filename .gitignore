@@ -1,0 +1,77 @@
+# ===========================================
+# Methodology Plating Studio - .gitignore
+# ===========================================
+
+# ----- OS Files -----
+.DS_Store
+._*
+__MACOSX/
+Thumbs.db
+
+# ----- Environment & Secrets -----
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+credentials.json
+**/credentials/
+secrets/
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+
+# ----- IDE & Editor -----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ----- Sensitive Data Folders -----
+# These contain private company data - DO NOT PUSH
+01_slack_data/
+02_google_drive_data/
+03_pgadmin_queries/
+04_fireflies_data/
+05_pg_marts_strategy/
+
+# Analysis outputs with private data
+*.analysis.json
+metadata.json
+PORTIONING_PHOTOS/
+
+# Archive folder
+archive/
+
+# ----- Logs & Temp -----
+*.log
+logs/
+tmp/
+temp/
+
+# ----- Build artifacts -----
+dist/
+build/
+*.pyc
+
+# ----- Heroku -----
+.heroku/
+
+# ===========================================
+# Files TO INCLUDE (for reference):
+# - docs/ folder (the Plating Studio site)
+# - README.md
+# - requirements.txt (root level for reference)
+# ===========================================
