@@ -1972,20 +1972,25 @@
             selectedComponent = null;
             document.getElementById('componentToolbar').style.display = 'none';
 
-            // Get active components
-            const active = selectedMeal.components.filter((_, i) => activeComponents.has(i));
+            // Get active components with their ORIGINAL indices
+            const active = selectedMeal.components
+                .map((comp, originalIdx) => ({ comp, originalIdx }))
+                .filter(({ originalIdx }) => activeComponents.has(originalIdx));
+
+            // Total components in meal (for fixed positioning)
+            const totalMealComponents = selectedMeal.components.length;
 
             // Track positions used per type
             const positionIndex = {};
 
-            active.forEach((comp, idx) => {
+            active.forEach(({ comp, originalIdx }) => {
                 const shapeGetter = componentShapes[comp.type] || componentShapes['VEGETABLE'];
                 const shape = shapeGetter(comp.name);
 
                 // Get position based on container type
-                // For jars: pass index and total for sequential bottom-to-top stacking
+                // For jars: use ORIGINAL index and TOTAL meal components for fixed positioning
                 if (!positionIndex[comp.type]) positionIndex[comp.type] = 0;
-                const positions = getPositionsForContainer(containerType, comp.type, idx, active.length);
+                const positions = getPositionsForContainer(containerType, comp.type, originalIdx, totalMealComponents);
                 const pos = positions[positionIndex[comp.type] % positions.length];
                 positionIndex[comp.type]++;
 
@@ -1995,7 +2000,7 @@
 
                 const componentData = {
                     id: componentIdCounter++,
-                    compIdx: idx,
+                    compIdx: originalIdx,
                     name: comp.name,
                     type: comp.type,
                     x: pos.x + offsetX,
