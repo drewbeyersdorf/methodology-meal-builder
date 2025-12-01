@@ -1510,8 +1510,18 @@
                     const type = typeMatch ? typeMatch[1].toUpperCase() : 'OTHER';
                     const name = itemName.replace(/^\([^)]+\)\s*/, '');
 
-                    // Get portioner number from column 0 (e.g., "1", "2", "3", etc.)
-                    const portionerNum = parseInt(row[0]) || 999;
+                    // Get portioner number - try column 0 first, handle formats: "1", "P1", "p1"
+                    let portionerNum = 999;
+                    const rawPortioner = String(row[0] || '').trim();
+
+                    // Try parsing "P1", "P2" format first
+                    const pMatch = rawPortioner.match(/[Pp]?(\d+)/);
+                    if (pMatch) {
+                        portionerNum = parseInt(pMatch[1]);
+                    }
+
+                    // Debug log
+                    console.log(`Component: ${name}, Raw portioner: "${rawPortioner}", Parsed: P${portionerNum}, Type: ${type}`);
 
                     currentMeal.components.push({
                         type: type,
@@ -1530,7 +1540,13 @@
 
             // Sort all meal components by portioner number (P1 first, P2 second, etc.)
             meals.forEach(meal => {
+                console.log(`\n=== ${meal.code} BEFORE SORT ===`);
+                meal.components.forEach((c, i) => console.log(`  ${i}: P${c.portioner} - ${c.name} (${c.type})`));
+
                 meal.components.sort((a, b) => a.portioner - b.portioner);
+
+                console.log(`=== ${meal.code} AFTER SORT ===`);
+                meal.components.forEach((c, i) => console.log(`  ${i}: P${c.portioner} - ${c.name} (${c.type})`));
             });
 
             console.log('Parsed meals:', meals);
