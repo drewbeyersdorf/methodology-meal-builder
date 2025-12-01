@@ -1933,21 +1933,19 @@
         }
 
         // Get default positions based on container type
-        function getPositionsForContainer(containerType, compType) {
+        function getPositionsForContainer(containerType, compType, compIndex, totalComponents) {
             if (containerType === 'jar') {
-                // Vertical stacking for jars
-                const jarPositions = {
-                    'VEGETABLE': [{ x: 225, y: 220 }, { x: 225, y: 170 }, { x: 225, y: 130 }],
-                    'SEA': [{ x: 225, y: 180 }],
-                    'LAND': [{ x: 225, y: 180 }],
-                    'SCOOP/VEGAN': [{ x: 225, y: 180 }],
-                    'SAUCE': [{ x: 225, y: 240 }],
-                    'TOPPING': [{ x: 225, y: 100 }],
-                    'HERB': [{ x: 225, y: 90 }],
-                    'GARNISH': [{ x: 225, y: 85 }],
-                    'VEGAN': [{ x: 225, y: 180 }]
-                };
-                return jarPositions[compType] || jarPositions['VEGETABLE'];
+                // Sequential vertical stacking for jars - P1 at BOTTOM, last at TOP
+                // Jar inner area: y from ~80 (top) to ~250 (bottom)
+                const jarTop = 85;
+                const jarBottom = 245;
+                const jarHeight = jarBottom - jarTop;
+
+                // Calculate Y position based on index - first items (P1) at bottom, last at top
+                const layerHeight = totalComponents > 1 ? jarHeight / (totalComponents - 1) : 0;
+                const yPosition = jarBottom - (compIndex * layerHeight);
+
+                return [{ x: 225, y: Math.max(jarTop, Math.min(jarBottom, yPosition)) }];
             } else if (containerType === 'bottle') {
                 // Centered for bottles (liquids layer)
                 return [{ x: 225, y: 180 }];
@@ -1985,14 +1983,15 @@
                 const shape = shapeGetter(comp.name);
 
                 // Get position based on container type
+                // For jars: pass index and total for sequential bottom-to-top stacking
                 if (!positionIndex[comp.type]) positionIndex[comp.type] = 0;
-                const positions = getPositionsForContainer(containerType, comp.type);
+                const positions = getPositionsForContainer(containerType, comp.type, idx, active.length);
                 const pos = positions[positionIndex[comp.type] % positions.length];
                 positionIndex[comp.type]++;
 
-                // Offset slightly if same position used
-                const offsetX = (positionIndex[comp.type] > positions.length) ? (positionIndex[comp.type] - positions.length) * 30 : 0;
-                const offsetY = (positionIndex[comp.type] > positions.length) ? (positionIndex[comp.type] - positions.length) * 20 : 0;
+                // Offset slightly if same position used (for bento only)
+                const offsetX = (containerType !== 'jar' && positionIndex[comp.type] > positions.length) ? (positionIndex[comp.type] - positions.length) * 30 : 0;
+                const offsetY = (containerType !== 'jar' && positionIndex[comp.type] > positions.length) ? (positionIndex[comp.type] - positions.length) * 20 : 0;
 
                 const componentData = {
                     id: componentIdCounter++,
