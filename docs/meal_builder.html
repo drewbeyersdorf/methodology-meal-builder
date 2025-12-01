@@ -1538,15 +1538,11 @@
                 meals.push(currentMeal);
             }
 
-            // Sort all meal components by portioner number (P1 first, P2 second, etc.)
+            // Sort all meal components by portioner number DESCENDING (highest P# first = base layer)
+            // Workbook convention: P1=garnish/last step, P6=base/first step
+            // So we reverse: P6 goes in first (base), P1 last (garnish on top)
             meals.forEach(meal => {
-                console.log(`\n=== ${meal.code} BEFORE SORT ===`);
-                meal.components.forEach((c, i) => console.log(`  ${i}: P${c.portioner} - ${c.name} (${c.type})`));
-
-                meal.components.sort((a, b) => a.portioner - b.portioner);
-
-                console.log(`=== ${meal.code} AFTER SORT ===`);
-                meal.components.forEach((c, i) => console.log(`  ${i}: P${c.portioner} - ${c.name} (${c.type})`));
+                meal.components.sort((a, b) => b.portioner - a.portioner);
             });
 
             console.log('Parsed meals:', meals);
