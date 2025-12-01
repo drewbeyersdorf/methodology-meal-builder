@@ -1505,11 +1505,15 @@
                     const type = typeMatch ? typeMatch[1].toUpperCase() : 'OTHER';
                     const name = itemName.replace(/^\([^)]+\)\s*/, '');
 
+                    // Get portioner number from column 0 (e.g., "1", "2", "3", etc.)
+                    const portionerNum = parseInt(row[0]) || 999;
+
                     currentMeal.components.push({
                         type: type,
                         name: name,
                         fullName: itemName,
-                        active: true
+                        active: true,
+                        portioner: portionerNum
                     });
                 }
             }
@@ -1518,6 +1522,11 @@
             if (currentMeal) {
                 meals.push(currentMeal);
             }
+
+            // Sort all meal components by portioner number (P1 first, P2 second, etc.)
+            meals.forEach(meal => {
+                meal.components.sort((a, b) => a.portioner - b.portioner);
+            });
 
             console.log('Parsed meals:', meals);
             renderMealList();
@@ -1601,12 +1610,15 @@
                 display.textContent = `Empty`;
                 nameDisplay.textContent = 'Container only';
             } else if (currentPortionStep >= totalPortionSteps) {
-                display.textContent = `All (${totalPortionSteps})`;
+                const lastComp = selectedMeal.components[totalPortionSteps - 1];
+                const lastPNum = lastComp ? lastComp.portioner : totalPortionSteps;
+                display.textContent = `All (P1-P${lastPNum})`;
                 nameDisplay.textContent = 'Complete meal';
             } else {
-                display.textContent = `P${currentPortionStep} / ${totalPortionSteps}`;
                 const comp = selectedMeal.components[currentPortionStep - 1];
-                nameDisplay.textContent = comp ? `Adding: ${comp.name}` : '';
+                const pNum = comp ? comp.portioner : currentPortionStep;
+                display.textContent = `Step ${currentPortionStep} / ${totalPortionSteps}`;
+                nameDisplay.textContent = comp ? `Adding P${pNum}: ${comp.name}` : '';
             }
         }
 
@@ -1697,11 +1709,12 @@
             let html = '';
             selectedMeal.components.forEach((comp, idx) => {
                 const isActive = activeComponents.has(idx);
+                const pNum = comp.portioner || (idx + 1);
                 html += `
                     <div class="component-toggle ${isActive ? 'active' : ''}" onclick="toggleComponent(${idx})">
                         <div class="toggle-indicator"></div>
                         <div>
-                            <div class="toggle-label">${comp.name.substring(0, 30)}${comp.name.length > 30 ? '...' : ''}</div>
+                            <div class="toggle-label"><strong>P${pNum}:</strong> ${comp.name.substring(0, 25)}${comp.name.length > 25 ? '...' : ''}</div>
                             <div class="toggle-type">${comp.type}</div>
                         </div>
                     </div>`;
