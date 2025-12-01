@@ -93,6 +93,13 @@ def index():
     return send_from_directory('.', 'index.html')
 
 
+@app.route('/meal_builder.html')
+@app.route('/meal-builder')
+@app.route('/builder')
+def meal_builder():
+    return send_from_directory('.', 'meal_builder.html')
+
+
 @app.route('/assets/<path:path>')
 def serve_assets(path):
     return send_from_directory('assets', path)
