@@ -384,6 +384,30 @@
             gap: 0.5rem;
         }
 
+        /* Portioning Step Controls */
+        .step-btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+            background: var(--pure-white);
+            border: 1px solid var(--sand);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--charcoal);
+            transition: all 0.2s ease;
+        }
+
+        .step-btn:hover {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: white;
+        }
+
+        .step-btn.active {
+            background: var(--sage);
+            border-color: var(--sage);
+            color: white;
+        }
+
         .view-btn {
             padding: 0.5rem 1rem;
             font-size: 0.65rem;
@@ -931,6 +955,21 @@
                 <div class="view-toggle">
                     <button class="view-btn active" onclick="setView('visual')">Visual</button>
                     <button class="view-btn" onclick="setView('data')">Data</button>
+                </div>
+            </div>
+
+            <!-- Portioning Step Controls -->
+            <div class="portioning-controls" id="portioningControls" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: var(--ivory); border-bottom: 1px solid var(--sand);">
+                    <span style="font-size: 0.7rem; font-weight: 600; color: var(--charcoal); text-transform: uppercase; letter-spacing: 0.05em;">Portioning Steps</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button class="step-btn" onclick="prevPortionStep()" title="Previous">◀</button>
+                        <span id="portionStepDisplay" style="font-size: 0.85rem; font-weight: 600; color: var(--ink); min-width: 80px; text-align: center;">P1 / P6</span>
+                        <button class="step-btn" onclick="nextPortionStep()" title="Next">▶</button>
+                    </div>
+                    <button class="step-btn" onclick="playPortioning()" id="playBtn" title="Auto-play" style="margin-left: 0.5rem;">▶ Play</button>
+                    <button class="step-btn" onclick="resetPortioning()" title="Reset">↺ Reset</button>
+                    <span id="currentStepName" style="font-size: 0.75rem; color: var(--stone); margin-left: auto;"></span>
                 </div>
             </div>
 
@@ -1517,6 +1556,12 @@
         }
 
         // Select a meal
+        // Portioning step state
+        let currentPortionStep = 0;
+        let totalPortionSteps = 0;
+        let isPlaying = false;
+        let playInterval = null;
+
         function selectMeal(idx) {
             selectedMeal = meals[idx];
             activeComponents = new Set(selectedMeal.components.map((_, i) => i));
@@ -1529,9 +1574,120 @@
             document.getElementById('configSubtitle').textContent = selectedMeal.name;
             document.getElementById('placeholderText').style.display = 'none';
 
+            // Initialize portioning steps
+            initPortioningSteps();
+
             renderComponentControls();
             renderBentoVisualization();
             updateGuardrails();
+        }
+
+        // Initialize portioning steps based on meal components
+        function initPortioningSteps() {
+            if (!selectedMeal) return;
+            totalPortionSteps = selectedMeal.components.length;
+            currentPortionStep = totalPortionSteps; // Start with all components shown
+
+            // Show portioning controls
+            document.getElementById('portioningControls').style.display = 'block';
+            updatePortionStepDisplay();
+        }
+
+        function updatePortionStepDisplay() {
+            const display = document.getElementById('portionStepDisplay');
+            const nameDisplay = document.getElementById('currentStepName');
+
+            if (currentPortionStep === 0) {
+                display.textContent = `Empty`;
+                nameDisplay.textContent = 'Container only';
+            } else if (currentPortionStep >= totalPortionSteps) {
+                display.textContent = `All (${totalPortionSteps})`;
+                nameDisplay.textContent = 'Complete meal';
+            } else {
+                display.textContent = `P${currentPortionStep} / ${totalPortionSteps}`;
+                const comp = selectedMeal.components[currentPortionStep - 1];
+                nameDisplay.textContent = comp ? `Adding: ${comp.name}` : '';
+            }
+        }
+
+        function prevPortionStep() {
+            if (currentPortionStep > 0) {
+                currentPortionStep--;
+                updatePortionStepDisplay();
+                renderPortioningView();
+            }
+        }
+
+        function nextPortionStep() {
+            if (currentPortionStep < totalPortionSteps) {
+                currentPortionStep++;
+                updatePortionStepDisplay();
+                renderPortioningView();
+            }
+        }
+
+        function resetPortioning() {
+            stopPlaying();
+            currentPortionStep = 0;
+            updatePortionStepDisplay();
+            renderPortioningView();
+        }
+
+        function playPortioning() {
+            const btn = document.getElementById('playBtn');
+            if (isPlaying) {
+                stopPlaying();
+            } else {
+                isPlaying = true;
+                btn.textContent = '⏸ Pause';
+                btn.classList.add('active');
+                currentPortionStep = 0;
+                renderPortioningView();
+                updatePortionStepDisplay();
+
+                playInterval = setInterval(() => {
+                    if (currentPortionStep < totalPortionSteps) {
+                        currentPortionStep++;
+                        updatePortionStepDisplay();
+                        renderPortioningView();
+                    } else {
+                        stopPlaying();
+                    }
+                }, 1000); // 1 second per step
+            }
+        }
+
+        function stopPlaying() {
+            isPlaying = false;
+            const btn = document.getElementById('playBtn');
+            btn.textContent = '▶ Play';
+            btn.classList.remove('active');
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+            }
+        }
+
+        // Render only components up to current step
+        function renderPortioningView() {
+            if (!selectedMeal) return;
+
+            // Update activeComponents to only show components up to currentPortionStep
+            activeComponents = new Set();
+            for (let i = 0; i < currentPortionStep && i < selectedMeal.components.length; i++) {
+                activeComponents.add(i);
+            }
+
+            // Update component toggles UI
+            document.querySelectorAll('.component-toggle').forEach((el, idx) => {
+                if (activeComponents.has(idx)) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            renderBentoVisualization();
         }
 
         // Render component controls
@@ -2450,19 +2606,29 @@
         }
 
         // Nano Banana Style Descriptions
+        // Nano Banana Style Descriptions - Matched to Methodology brand reference images
         const nanoBananaStyles = {
-            bento: `Professional food photography of a 25oz oval sage-green bento container on a brushed stainless steel prep table.
-                    Shot from 45-degree angle, soft diffused overhead lighting, shallow depth of field.
-                    Components arranged diagonally with intentional negative space.
-                    Premium meal prep aesthetic, Erewhon-quality presentation.
-                    Clean, minimal, Instagram-worthy food styling.`,
-            jar: `Professional food photography of a 16oz glass mason jar with wooden lid on brushed stainless steel surface.
-                  Layered ingredients visible through clear glass, vibrant colors stacked aesthetically.
-                  45-degree angle shot, soft natural lighting, shallow depth of field.
-                  Premium grab-and-go aesthetic, visible texture and freshness.`,
-            bottle: `Professional product photography of a premium juice bottle on brushed stainless steel surface.
-                     Clean label area, vibrant liquid color visible, condensation droplets.
-                     Studio lighting, premium beverage aesthetic.`
+            bento: `Professional food photography of a sage-green oval bento container on brushed stainless steel prep table surface.
+                    Shot from overhead 45-degree angle, soft diffused studio lighting.
+                    Sliced protein arranged diagonally across center of bento.
+                    Dark leafy greens (kale) as base layer visible underneath.
+                    Colorful vegetables in distinct sections - purple cabbage slaw, bright orange squash cubes, green edamame.
+                    Small clear plastic cups for sauces and crunchy toppings placed in corners.
+                    Premium meal prep aesthetic, clean component separation, vibrant natural colors.
+                    Photorealistic food photography. No text, labels or watermarks.`,
+            jar: `Professional food photography of a clear glass mason jar with white "Methodology Food as Medicine" text printed on the glass.
+                  Mint/sage colored plastic lid leaning casually against the jar at an angle.
+                  PURE WHITE background - clean, minimal, studio product photography style.
+                  Layered ingredients clearly visible through glass from bottom to top in distinct colorful bands.
+                  Bottom layer: grains, rice, or creamy puree base. Middle layers: protein chunks, colorful vegetable cubes in separate bands.
+                  Top layer: fresh leafy greens (mixed greens, spinach) overflowing slightly from jar opening, garnished with edible flowers (pansies) or fresh herbs.
+                  Soft diffused studio lighting, subtle shadow under jar on white surface.
+                  Premium meal prep jar aesthetic. Photorealistic food photography.
+                  Do not add any additional text or watermarks.`,
+            bottle: `Professional product photography of a premium glass juice bottle on pure white background.
+                     Clean minimalist aesthetic, vibrant liquid color visible through clear glass.
+                     Soft studio lighting with subtle shadows. Premium cold-pressed juice aesthetic.
+                     No text or watermarks.`
         };
 
         // Generate image with Nano Banana
