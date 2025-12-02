@@ -2782,33 +2782,77 @@ FORBIDDEN: No cap, no lid, no text, no watermarks.`
             const containerType = getContainerType(selectedMeal);
             const stylePrompt = nanoBananaStyles[containerType];
 
-            // Build component description with positions
-            const componentDescriptions = activeComps.map(c => {
+            // MILLION-STEP GROUNDED COMPONENT MAPPING
+            // Map component types to exact visual descriptions (no hallucination)
+            const componentVisuals = {
+                'VEGETABLE': 'colorful roasted or sautéed vegetables with visible caramelization',
+                'SEA': 'premium seared fish or seafood with golden crust, flaky interior visible',
+                'LAND': 'perfectly cooked protein with herb garnish and proper sear marks',
+                'HERB': 'fresh bright green herbs scattered delicately as garnish',
+                'TOPPING': 'crunchy toasted nuts, seeds, or crispy elements for texture',
+                'GARNISH': 'microgreens, edible flowers, or fresh herb sprigs as finishing touch',
+                'SAUCE': 'glossy sauce pooled or drizzled artfully',
+                'VEGAN': 'plant-based protein or hearty legumes with rich color',
+                'SCOOP/VEGAN': 'creamy hummus, puree, or plant-based element'
+            };
+
+            // Build PRECISE component list with visual grounding
+            const componentDescriptions = activeComps.map((c, idx) => {
                 const placed = placedComponents.find(p => p.name === c.name);
-                let position = '';
-                if (placed) {
-                    if (containerType === 'jar') {
-                        position = placed.y < 120 ? 'at top' : placed.y > 200 ? 'at bottom' : 'in middle';
+                const visual = componentVisuals[c.type] || 'prepared ingredient';
+
+                // Calculate exact position for jar layering or bento placement
+                let positionDesc = '';
+                if (containerType === 'jar') {
+                    // Jar: vertical layers, P6 at bottom, P1 at top
+                    const totalComps = activeComps.length;
+                    const layerPercent = Math.round(((totalComps - idx) / totalComps) * 100);
+                    if (layerPercent > 70) positionDesc = `BOTTOM LAYER (${layerPercent}% from bottom)`;
+                    else if (layerPercent > 40) positionDesc = `MIDDLE LAYER`;
+                    else positionDesc = `TOP LAYER (near opening)`;
+                } else {
+                    // Bento: spatial placement
+                    if (placed) {
+                        const xPos = placed.x < 180 ? 'LEFT' : placed.x > 270 ? 'RIGHT' : 'CENTER';
+                        const yPos = placed.y < 140 ? 'TOP' : placed.y > 190 ? 'BOTTOM' : 'MIDDLE';
+                        positionDesc = `${yPos}-${xPos} of container`;
                     } else {
-                        position = placed.x < 200 ? 'on left side' : placed.x > 250 ? 'on right side' : 'in center';
+                        positionDesc = c.type === 'HERB' || c.type === 'GARNISH' ? 'scattered on top' : 'in container';
                     }
                 }
-                return `${c.name} (${c.type.toLowerCase()}) ${position}`;
-            }).join(', ');
 
+                return `- ${c.name}: ${visual} positioned ${positionDesc}`;
+            }).join('\n');
+
+            // Build GROUNDED full prompt
             const fullPrompt = `${stylePrompt}
 
-Contents: ${componentDescriptions}
+=== EXACT FOOD CONTENTS (render precisely as described) ===
+${componentDescriptions}
 
-Meal: "${selectedMeal.name}"
-Style: Premium health-focused meal delivery, chef-crafted quality.
-DO NOT include any text, labels, or watermarks in the image.`;
+=== MEAL IDENTITY ===
+Meal Name: "${selectedMeal.name}"
+Total Components: ${activeComps.length}
+Container: ${containerType.toUpperCase()}
+
+=== CRITICAL INSTRUCTIONS ===
+1. Render ONLY the ingredients listed above - no additions, no substitutions
+2. Each ingredient must be IDENTIFIABLE by its description
+3. Container position is FIXED - only food arrangement changes
+4. Photorealistic quality matching gomethodology.com product photography
+5. NO text, NO labels, NO watermarks, NO lids, NO caps`;
+
+            // Log full prompt to console for debugging
+            console.log('=== NANO BANANA PROMPT ===');
+            console.log(fullPrompt);
+            console.log('=========================');
 
             addChatMessage('ai', `🍌 Generating Nano Banana image...<br><br>
                 <span style="font-size: 0.75rem; color: var(--stone);">
                 Container: ${containerType}<br>
                 Components: ${activeComps.length}<br>
-                Estimated time: 10-30 seconds
+                Estimated time: 10-30 seconds<br><br>
+                <details><summary>View Prompt</summary><pre style="white-space: pre-wrap; font-size: 0.65rem; max-height: 200px; overflow-y: auto;">${fullPrompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre></details>
                 </span>`);
 
             try {
